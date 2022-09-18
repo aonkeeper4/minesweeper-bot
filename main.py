@@ -5,7 +5,7 @@ from github import Github
 import toml
 from keep_alive import keep_alive
 
-git = Github("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")
+git = Github(os.environ["GITHUB_TOKEN"])
 
 intents = discord.Intents().all()
 client = commands.Bot(command_prefix=";", intents=intents)
