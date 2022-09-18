@@ -67,4 +67,4 @@ async def stop(ctx):
     await client.close()
     
 keep_alive()
-client.run("MTAyMTA3ODI0NTY2NTQxMTE1Mg.GwpqFP.k1zOerdfMFuODTTMe5SRvVytavSmjviN51xEvE")
+client.run(os.environ["MINESWEEPER_BOT_TOKEN"])
