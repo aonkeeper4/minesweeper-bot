@@ -12,7 +12,7 @@ client = commands.Bot(command_prefix=";", intents=intents)
 
 def download_asset_from_release(asset_name, release, path):
     asset = next(asset for asset in release.get_assets() if asset.name == asset_name)
-    url = asset.url
+    url = asset.browser_download_url
     import urllib.request
     urllib.request.urlretrieve(url, path)
 
@@ -57,6 +57,8 @@ async def start(ctx):
         if latest_hosted != latest_version:
             print("current version is not the latest, downloading latest release")
             download_asset_from_release("minesweeper.exe", latest, "./minesweeper/minesweeper.exe")
+        else:
+            print("current version is the latest")
             
     # by now we should have the minesweeper.exe
     pass
