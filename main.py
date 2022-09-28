@@ -4,6 +4,8 @@ import os
 from github import Github
 import toml
 from keep_alive import keep_alive
+from subprocess import Popen, PIPE
+import asyncio
 
 git = Github(os.environ["GITHUB_TOKEN"])
 
@@ -15,6 +17,34 @@ def download_asset_from_release(asset_name, release, path):
     url = asset.url
     import urllib.request
     urllib.request.urlretrieve(url, path)
+    
+async def send_embed(ctx, title, body, colour, r=False, footer='', edit=None):  # helper function cus embeds are pain
+    embed = discord.Embed(title=title, description=body, colour=colour)
+    embed.set_footer(text=footer)
+    if edit is None:
+        msg = await ctx.send(embed=embed)
+    else:
+        msg = edit
+        await edit.edit(embed=embed)
+    return msg if r else None    
+
+async def wait_for_message(ctx, check, timeout=60):  # another helper function weeee
+    try:
+        message = await client.wait_for(
+            'message',
+            timeout=timeout,
+            check=check
+        )
+    except asyncio.TimeoutError:
+        await send_embed(
+            ctx,
+            'Error',
+            'Error - command timed out',
+            discord.Colour.red()
+        )
+        return
+    else:
+        return message
 
 @client.event
 async def on_ready():
@@ -25,7 +55,7 @@ async def on_command_error(ctx, e):
     await ctx.send(str(e))
     
 @client.command(help="starts new minesweeper game")
-async def start(ctx):
+async def start(ctx, width, height, num_mines, variant):
     try:
         print("finding minesweeper repo")
         minesweeper = next(repo for repo in git.get_user().get_repos() if repo.name == "minesweeper")
@@ -57,9 +87,22 @@ async def start(ctx):
         if latest_hosted != latest_version:
             print("current version is not the latest, downloading latest release")
             download_asset_from_release("minesweeper.exe", latest, "./minesweeper/minesweeper.exe")
+        else:
+            print("minesweeper.exe up to date")
             
     # by now we should have the minesweeper.exe
-    pass
+    
+    args = ["./minesweeper/minesweeper.exe", width, height, num_mines, variant]
+    process = Popen(args, stdout=PIPE, stdin=PIPE)
+    while not process.poll():
+        stdin = wait_for_message(ctx, lambda msg: msg.author == ctx.author)
+        stdout, stderr = process.communicate()
+        if not stderr:
+            await send_embed(ctx, "Minesweeper", f"```{stdout}```", discord.Colour.brand_green())
+        else:
+            await send_embed(ctx, "Minesweeper - Error", f"```{stderr}```", discord.Colour.red())
+            
+    await send_embed(ctx, "Game ended", f"Game has ended!", discord.Colour.brand_green())
 
 @client.command()
 async def stop(ctx):
